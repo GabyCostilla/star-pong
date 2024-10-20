@@ -6,8 +6,9 @@ paddle_width = paddle_height = 0
 paddle_speed = ball_size = 0
 ball_x = ball_y = ball_dx = ball_dy = 0
 player1_score = player2_score = 0
+paddle_accel1 = paddle_accel2 = 0  
+paddle_max_speed = 10  
 
-# Estado de las teclas presionadas
 keys = set()
 
 def setup():
@@ -27,7 +28,7 @@ def reset_game():
     ball_x = py5.width / 2
     ball_y = py5.height / 2
     ball_dx = 5
-    ball_dy = 3
+    ball_dy = py5.random(-3, 3)  # Velocidad aleatoria en Y
     paddle1_y = py5.height / 2 - paddle_height / 2
     paddle2_y = py5.height / 2 - paddle_height / 2
     player1_score = 0
@@ -35,24 +36,24 @@ def reset_game():
 
 def draw():
     global ball_x, ball_y, ball_dx, ball_dy, paddle1_y, paddle2_y
-    global player1_score, player2_score
+    global player1_score, player2_score, paddle_accel1, paddle_accel2
 
     py5.background(0)
     
-    # Dibujar los paddles
+
     py5.rect(30, paddle1_y, paddle_width, paddle_height)  # Pala izquierda
     py5.rect(py5.width - 30 - paddle_width, paddle2_y, paddle_width, paddle_height)  # Pala derecha
     
-    # Dibujar la pelota
+
     py5.ellipse(ball_x, ball_y, ball_size, ball_size)
     
-    # Dibujar el marcador
+
     py5.text_size(32)
     py5.text_align(py5.CENTER)
     py5.fill(255)
     py5.text(f"{player1_score} - {player2_score}", py5.width / 2, 40)
     
-    # Dibujar ayuda de teclas
+
     py5.text_size(16)
     py5.text_align(py5.LEFT)
     py5.fill(255)
@@ -60,7 +61,7 @@ def draw():
     py5.text_align(py5.RIGHT)
     py5.text("Jugador 2: O (Arriba), L (Abajo)", py5.width - 10, 30)
     
-    # Actualizar posición de la pelota
+
     ball_x += ball_dx
     ball_y += ball_dy
     
@@ -71,33 +72,54 @@ def draw():
     # Verificar colisiones con los paddles
     if ball_x - ball_size / 2 <= 30 + paddle_width:
         if paddle1_y < ball_y < paddle1_y + paddle_height:
-            ball_dx *= -1
+            hit_position = (ball_y - paddle1_y) / paddle_height  
+            ball_dx = abs(ball_dx) * 1.05  # Incrementar velocidad
+            ball_dy = (hit_position - 0.5) * 8  # Modificar ángulo
             ball_x = 30 + paddle_width + ball_size / 2
-    
+
     if ball_x + ball_size / 2 >= py5.width - 30 - paddle_width:
         if paddle2_y < ball_y < paddle2_y + paddle_height:
-            ball_dx *= -1
+            hit_position = (ball_y - paddle2_y) / paddle_height  
+            ball_dx = -abs(ball_dx) * 1.05  # Incrementar velocidad
+            ball_dy = (hit_position - 0.5) * 8  # Modificar ángulo
             ball_x = py5.width - 30 - paddle_width - ball_size / 2
     
-    # Si la pelota sale por la izquierda
+    # Limitar la velocidad de la pelota
+    ball_dx = py5.constrain(ball_dx, -12, 12)
+    ball_dy = py5.constrain(ball_dy, -12, 12)
+    
+    
     if ball_x < 0:
         player2_score += 1
         reset_ball()
     
-    # Si la pelota sale por la derecha
+
     if ball_x > py5.width:
         player1_score += 1
         reset_ball()
 
-    # Limitar el movimiento de los paddles
-    if 'w' in keys and paddle1_y > 0:
-        paddle1_y -= paddle_speed
-    if 's' in keys and paddle1_y < py5.height - paddle_height:
-        paddle1_y += paddle_speed
-    if 'o' in keys and paddle2_y > 0:
-        paddle2_y -= paddle_speed
-    if 'l' in keys and paddle2_y < py5.height - paddle_height:
-        paddle2_y += paddle_speed
+
+    if 'w' in keys:
+        paddle_accel1 = -1
+    elif 's' in keys:
+        paddle_accel1 = 1
+    else:
+        paddle_accel1 = 0  
+
+    if 'o' in keys:
+        paddle_accel2 = -1
+    elif 'l' in keys:
+        paddle_accel2 = 1
+    else:
+        paddle_accel2 = 0  
+
+    # Aplicar aceleración y fricción
+    paddle1_y += paddle_speed * paddle_accel1
+    paddle2_y += paddle_speed * paddle_accel2
+    
+
+    paddle1_y = py5.constrain(paddle1_y, 0, py5.height - paddle_height)
+    paddle2_y = py5.constrain(paddle2_y, 0, py5.height - paddle_height)
 
 def key_pressed():
     global keys
@@ -111,8 +133,11 @@ def reset_ball():
     global ball_x, ball_y, ball_dx, ball_dy
     ball_x = py5.width / 2
     ball_y = py5.height / 2
-    ball_dx *= -1
+    ball_dx = py5.random(-5, 5)
     ball_dy = py5.random(-3, 3)
 
 if __name__ == "__main__":
     py5.run_sketch()
+
+#supuestamente aceleran y desaceleran debido a su inercia
+#cuanto mas al centro pegue la pelota mas recto ira el tiro
